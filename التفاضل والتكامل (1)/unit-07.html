@@ -35,10 +35,10 @@ p { margin: 0 0 .75rem; }
 .row { display: flex; align-items: center; gap: 1rem; margin: .25rem 0; }
 .row > .label { flex: none; min-width: 4.5rem; font-weight: 700; color: var(--accent); }
 .row > math { flex: 1; direction: ltr; }
-.center { direction: rtl; text-align: center; margin: .5rem 0; display: block; }
+.center { text-align: center; margin: .5rem 0; display: block; }   /* no direction: follows the page (rtl in Arabic books, ltr in English) */
 ol.objectives { padding-inline-start: 1.5rem; margin: 0; }
 ol.objectives li { margin-bottom: .25rem; }
-.grid { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem 1.5rem; direction: rtl; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem 1.5rem; }   /* no direction: follows the page */
 .grid .item { display: flex; align-items: center; gap: .6rem; }
 .grid math { direction: ltr; }
 .item { display: flex; gap: .6rem; margin: .25rem 0; }
@@ -99,7 +99,7 @@ nav.toc li { margin: 0; }
 nav.toc a { display: flex; align-items: baseline; gap: .5rem; color: inherit; text-decoration: none; padding: .1rem 0; }
 nav.toc a:hover .toc-text { color: var(--accent); text-decoration: underline; }
 .toc-dots { flex: 1; border-bottom: 2px dotted var(--toc-dots); transform: translateY(-.3em); min-width: 1rem; }
-.toc-page { flex: none; min-width: 1.75rem; text-align: left; direction: ltr; font-variant-numeric: tabular-nums; }
+.toc-page { flex: none; min-width: 1.75rem; text-align: end; font-variant-numeric: tabular-nums; }
 li.toc-1 > a { font-weight: 700; margin-top: .5rem; }
 li.toc-2 > a { padding-inline-start: 1.25rem; }
 li.toc-3 > a { padding-inline-start: 2.5rem; font-size: .95rem; }
@@ -173,9 +173,10 @@ h2, h3, h2.sub, .callout-title, .unit-title, .toc-title { color: #006991; }
 /* Table header cells: #e7f1f6 background, black text; borders unchanged */
 table.values th, .book table th { background-color: #e7f1f6; color: #000000; }
 
-/* ===== v6: page markers (original page numbers) shown as "صفحة N" ===== */
+/* ===== v6: page markers (original page numbers) shown as "صفحة N" ("Page N" in English books, see v12) ===== */
 .pb { scroll-margin-top: 1rem; }
-/* Inline marker: where a printed page ends in the middle of a paragraph (shows the number of the page that ends there) */
+/* Inline marker: NOT produced by the build any more (v11: the splitter always cuts the content instead).
+   Kept only so older files still display. */
 .pb:not(.block) {
   display: inline-block; vertical-align: baseline; margin-inline: .4em;
   padding: 0 .65em; border: 1px solid #006991; border-radius: 999px;
@@ -183,7 +184,7 @@ table.values th, .book table th { background-color: #e7f1f6; color: #000000; }
   unicode-bidi: isolate; white-space: nowrap;
 }
 .pb:not(.block)::before { content: "صفحة " attr(data-page); }
-/* Block marker: placed AFTER the content of its printed page (line with the label on its left end) */
+/* Block marker: placed AFTER the content of its printed page (line with the label at its end: left edge in Arabic books, right edge in English) */
 .pb.block {
   display: flex; justify-content: flex-end; margin: 1.25rem 0 1rem;
   background: linear-gradient(#006991, #006991) center / 100% 1px no-repeat;
@@ -299,7 +300,7 @@ h1.sec.sec-center { text-align: center; }
 .hl { color: #006991; font-weight: 700; }
 /* Table captions are colored and centered in print */
 .book p.table-caption { text-align: center; font-size: 1.05rem; font-weight: 700; color: #006991; margin: .75rem 0 .25rem; }
-/* Centered lines are right-to-left (Arabic text + equation reads correctly); the math itself stays left-to-right */
+/* Centered lines follow the page direction (Arabic text + equation reads correctly in both languages); the math itself stays left-to-right */
 .center math, .grid math, .row > math { direction: ltr; }
 /* Figures: the build sets the figure's width (share of the text block, as in print);
    the crop fills that width and the figure is centered, never wider than the text. */
@@ -316,6 +317,35 @@ math.eq-scroll { max-width: 100%; overflow-x: auto; overflow-y: hidden; }
 math[display="block"].eq-scroll { display: block math; }
 math:not([display="block"]).eq-scroll { display: inline-block; vertical-align: middle; }
 table.values.tbl-scroll { display: block; overflow-x: auto; }   /* a value table still too wide after shrinking scrolls sideways */
+
+/* ===== v11: page splitter cuts everything + footnotes ===== */
+/* Every printed page ends the same way: its content, then its footnotes, then the «صفحة N» splitter
+   (<div class="pb block">). Content cut by a page break is never joined: it is shown in two parts.
+   The build marks each second part with class "cont". */
+li.cont { list-style: none; }                         /* rest of a list item cut by the page: no second number */
+.callout.cont > .callout-body { border-top-style: dashed; }   /* second part of a box: frame only, no title row */
+.infobox.cont { margin-top: .5rem; }
+
+/* Footnotes: mark in the text, notes at the end of their page (before the splitter).
+   Numbers restart at 1 in each unit file. The separator line sits at the start side
+   (right in Arabic books, left in English books), as in print. */
+.fn-ref { font-size: .7em; line-height: 0; vertical-align: super; }
+.fn-ref a { color: #006991; text-decoration: none; font-weight: 700; padding: 0 .1em; }
+.footnotes { margin: 1.5rem 0 .5rem; }
+.footnotes::before { content: ""; display: block; width: 35%; border-top: 1px solid var(--ink); margin-bottom: .5rem; }
+.footnotes ol { list-style: none; margin: 0; padding: 0; }
+.book .footnotes li { font-size: 1rem; line-height: 1.8; margin: 0 0 .3rem; text-align: justify; }
+.fn-num { font-size: .75em; vertical-align: super; line-height: 0; margin-inline-end: .3em; color: #006991; font-weight: 700; }
+.fn-back { text-decoration: none; color: #006991; margin-inline-start: .35em; font-size: .9em; }
+.footnotes li:target, .fn-ref:target { background: #e7f1f6; }
+:target { scroll-margin-top: 2rem; }
+
+/* ===== v12: page label in the book's language ===== */
+/* Arabic books (<html lang="ar">): «صفحة N» (rules above). English books (<html lang="en">): «Page N». */
+:lang(en) .pb:not(.block)::before, :lang(en) .pb.block::before { content: "Page " attr(data-page); }
+:lang(en) .pb[data-page=""]:not(.block)::before, :lang(en) .pb:not([data-page]):not(.block)::before,
+:lang(en) .pb.block[data-page=""]::before, :lang(en) .pb.block:not([data-page])::before { content: "Page"; }
+html.hide-pb:lang(en) .pb:not(.block)::before, html.hide-pb:lang(en) .pb.block::before { content: none; }
 </style>
 </head>
 <body>
@@ -661,7 +691,9 @@ table.values.tbl-scroll { display: block; overflow-x: auto; }   /* a value table
 </ul>
 <p>2) جد حجم الكرة المتولدة من دوران نصف الدائرة التي معادلتها <math display="inline"><mrow><msup><mi>x</mi><mrow><mn>2</mn></mrow></msup><mo>+</mo><msup><mi>y</mi><mrow><mn>2</mn></mrow></msup><mo>=</mo><mn>25</mn></mrow></math> دورة كاملة حول قطرها.</p>
 <p>3) جد حجم الاسطوانة الدائرية القائمة المتولدة من دوران السطح المحدد بالمستقيمات التالية دورة كاملة حول محور <math display="inline"><mrow><mi>y</mi><mo>=</mo><mn>4</mn><mo>,</mo><mtext> </mtext><mi>x</mi><mo>=</mo><mn>6</mn><mo>,</mo><mtext> </mtext><mi>y</mi><mo>=</mo><mn>0</mn><mo>,</mo><mtext> </mtext><mi>x</mi><mo>=</mo><mn>0</mn></mrow></math>. جد حجم الاسطوانة عندما يدور هذا السطح حول محور <math display="inline"><mrow><mi>y</mi></mrow></math>.</p>
+</div></aside>
 <div class="pb block" data-page="358" id="p358"></div>
+<aside class="callout cont" data-kind="quiz"><div class="callout-body">
 <p>4) جد حجم الجسم المتولد من دوران السطح المحدد بالمنحنى <math display="inline"><mrow><mi>y</mi><mo>=</mo><mfrac><mrow><msup><mi>x</mi><mrow><mn>3</mn></mrow></msup></mrow><mrow><mn>3</mn></mrow></mfrac></mrow></math> وبالمستقيمين <math display="inline"><mrow><mi>y</mi><mo>=</mo><mn>3</mn><mo>,</mo><mtext> </mtext><mi>y</mi><mo>=</mo><mn>1</mn></mrow></math> وبمحور <math display="inline"><mrow><mi>y</mi></mrow></math> حول محور <math display="inline"><mrow><mi>y</mi></mrow></math> .</p>
 <p>5) جد حجم الجسم المتولد من دوران السطح المحدود بالمنحنى <math display="inline"><mrow><mi>y</mi><mo>=</mo><mi>cos</mi><mspace width="0.167em"></mspace><mn>2</mn><mi>x</mi></mrow></math> وبمحور <math display="inline"><mrow><mi>x</mi></mrow></math> والمستقيمين <math display="inline"><mrow><mi>x</mi><mo>=</mo><mn>0</mn></mrow></math> و <math display="inline"><mrow><mi>x</mi><mo>=</mo><mfrac><mrow><mi>π</mi></mrow><mrow><mn>4</mn></mrow></mfrac></mrow></math> دورة كاملة حول محور <math display="inline"><mrow><mi>x</mi></mrow></math>، ثم حول محور <math display="inline"><mrow><mi>y</mi></mrow></math>.</p>
 <p>6) كرة مفرغة قطرها 10 سم ملئت بالماء فكان عمقه فيها 4سم. ما حجم الماء بالسنتيمترات المكعبة؟</p>
@@ -996,15 +1028,17 @@ table.values.tbl-scroll { display: block; overflow-x: auto; }   /* a value table
 <li>يمكننا حساب طول منحنى الاقتران مثل: <math display="inline"><mrow><mi>y</mi><mo>=</mo><mi>f</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo></mrow></math> في الفترة المغلقة <math display="inline"><mrow><mo stretchy="false">[</mo><mi>a</mi><mo>,</mo><mi>b</mi><mo stretchy="false">]</mo></mrow></math>، بإجراء التكامل التالي:
 <p class="center"><math display="block"><mrow><msubsup><mi>L</mi><mrow><mi>a</mi></mrow><mrow><mi>b</mi></mrow></msubsup><mo>=</mo><msubsup><mo>∫</mo><mrow><mi>a</mi></mrow><mrow><mi>b</mi></mrow></msubsup><msqrt><mrow><mn>1</mn><mo>+</mo><mo stretchy="false">[</mo><mi>d</mi><mi>y</mi><mo lspace="0" rspace="0">/</mo><mi>d</mi><mi>x</mi><msup><mo stretchy="false">]</mo><mrow><mn>2</mn></mrow></msup></mrow></msqrt><mtext> </mtext><mi>d</mi><mi>x</mi></mrow></math></p></li>
 <li>إذا كان المتغيران <math display="inline"><mrow><mi>y</mi><mo>,</mo><mi>x</mi></mrow></math> معرفين من خلال معادلتين وسيطيتين بدلالة الوسيط "<math display="inline"><mrow><mi>t</mi></mrow></math>" فإن طول المنحنى في الفترة المغلقة <math display="inline"><mrow><mo stretchy="false">[</mo><mi>a</mi><mo>,</mo><mi>b</mi><mo stretchy="false">]</mo></mrow></math> يعطى بالتكامل التالي:
-<p class="center"><math display="block"><mrow><msubsup><mi>L</mi><mrow><mi>a</mi></mrow><mrow><mi>b</mi></mrow></msubsup><mo>=</mo><msubsup><mo>∫</mo><mrow><msub><mi>t</mi><mrow><mi>a</mi></mrow></msub></mrow><mrow><msub><mi>t</mi><mrow><mi>b</mi></mrow></msub></mrow></msubsup><msqrt><mrow><mo stretchy="false">(</mo><mfrac><mrow><mi>d</mi><mi>x</mi></mrow><mrow><mi>d</mi><mi>t</mi></mrow></mfrac><msup><mo stretchy="false">)</mo><mrow><mn>2</mn></mrow></msup><mo>+</mo><mo stretchy="false">(</mo><mfrac><mrow><mi>d</mi><mi>y</mi></mrow><mrow><mi>d</mi><mi>t</mi></mrow></mfrac><msup><mo stretchy="false">)</mo><mrow><mn>2</mn></mrow></msup></mrow></msqrt><mtext> </mtext><mi>d</mi><mi>t</mi></mrow></math></p><span class="pb" data-page="377" id="p377"></span></li>
-
+<p class="center"><math display="block"><mrow><msubsup><mi>L</mi><mrow><mi>a</mi></mrow><mrow><mi>b</mi></mrow></msubsup><mo>=</mo><msubsup><mo>∫</mo><mrow><msub><mi>t</mi><mrow><mi>a</mi></mrow></msub></mrow><mrow><msub><mi>t</mi><mrow><mi>b</mi></mrow></msub></mrow></msubsup><msqrt><mrow><mo stretchy="false">(</mo><mfrac><mrow><mi>d</mi><mi>x</mi></mrow><mrow><mi>d</mi><mi>t</mi></mrow></mfrac><msup><mo stretchy="false">)</mo><mrow><mn>2</mn></mrow></msup><mo>+</mo><mo stretchy="false">(</mo><mfrac><mrow><mi>d</mi><mi>y</mi></mrow><mrow><mi>d</mi><mi>t</mi></mrow></mfrac><msup><mo stretchy="false">)</mo><mrow><mn>2</mn></mrow></msup></mrow></msqrt><mtext> </mtext><mi>d</mi><mi>t</mi></mrow></math></p></li>
+</ol>
+</div>
+<div class="pb block" data-page="377" id="p377"></div>
+<div class="box cont">
+<ol class="cont" start="6">
 <li>مساحة السطح الدوراني للاقتران <math display="inline"><mrow><mi>f</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo></mrow></math> في الفترة المغلقة <math display="inline"><mrow><mo stretchy="false">[</mo><mi>a</mi><mo>,</mo><mi>b</mi><mo stretchy="false">]</mo></mrow></math> تعطى بالتكامل التالي:
 <p class="center"><math display="block"><mrow><mi>A</mi><mo>=</mo><mn>2</mn><mi>π</mi><msubsup><mo>∫</mo><mrow><mi>a</mi></mrow><mrow><mi>b</mi></mrow></msubsup><mi>f</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo><msqrt><mrow><mn>1</mn><mo>+</mo><mo stretchy="false">[</mo><mi>f</mi><msup><mspace width="0.167em"></mspace><mi>′</mi></msup><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo><msup><mo stretchy="false">]</mo><mrow><mn>2</mn></mrow></msup></mrow></msqrt><mtext> </mtext><mi>d</mi><mi>x</mi></mrow></math></p></li>
 <li>من التطبيقات الفيزيائية للتكامل حساب الشغل "<math display="inline"><mrow><mi>W</mi></mrow></math>" بدلالة اقتران القوة <math display="inline"><mrow><mi>F</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo></mrow></math> التالي:
 <p class="center"><math display="block"><mrow><mi>W</mi><mo>=</mo><msubsup><mo>∫</mo><mrow><mi>a</mi></mrow><mrow><mi>b</mi></mrow></msubsup><mi>F</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo><mspace width="0.167em"></mspace><mi>d</mi><mi>x</mi></mrow></math></p></li>
 </ol>
-
-
 </div>
 <h1 class="sec" id="s18">7. إجابات التدريبات</h1>
 <div class="box">
@@ -1026,7 +1060,9 @@ table.values.tbl-scroll { display: block; overflow-x: auto; }   /* a value table
 <p>(أ) نجد نقاط التقاطع بمساواة المنحنيين:</p>
 <p class="center"><math display="block"><mrow><msup><mi>x</mi><mrow><mn>3</mn></mrow></msup><mo>=</mo><msup><mi>x</mi><mrow><mn>2</mn></mrow></msup><mo>⇒</mo><msup><mi>x</mi><mrow><mn>3</mn></mrow></msup><mo>−</mo><msup><mi>x</mi><mrow><mn>2</mn></mrow></msup><mo>=</mo><mn>0</mn></mrow></math></p>
 <p class="center"><math display="block"><mrow><msup><mi>x</mi><mrow><mn>2</mn></mrow></msup><mo stretchy="false">(</mo><mi>x</mi><mo>−</mo><mn>1</mn><mo stretchy="false">)</mo><mo>=</mo><mn>0</mn><mo>⇒</mo><msub><mi>x</mi><mrow><mn>1</mn></mrow></msub><mo>=</mo><mn>0</mn><mo>,</mo><mtext> </mtext><msub><mi>x</mi><mrow><mn>2</mn></mrow></msub><mo>=</mo><mn>1</mn></mrow></math></p>
+</div>
 <div class="pb block" data-page="378" id="p378"></div>
+<div class="box cont">
 <p>وحدة مربعة <math display="inline"><mrow><mi>A</mi><mo>=</mo><msubsup><mo>∫</mo><mrow><mn>0</mn></mrow><mrow><mn>1</mn></mrow></msubsup><mo stretchy="false">(</mo><msup><mi>x</mi><mrow><mn>3</mn></mrow></msup><mo>−</mo><msup><mi>x</mi><mrow><mn>2</mn></mrow></msup><mo stretchy="false">)</mo><mi>d</mi><mi>x</mi><mo>=</mo><mfrac><mrow><msup><mi>x</mi><mrow><mn>4</mn></mrow></msup></mrow><mrow><mn>4</mn></mrow></mfrac><mo>−</mo><mfrac><mrow><msup><mi>x</mi><mrow><mn>3</mn></mrow></msup></mrow><mrow><mn>3</mn></mrow></mfrac><msubsup><mo stretchy="false">]</mo><mrow><mn>0</mn></mrow><mrow><mn>1</mn></mrow></msubsup><mo>=</mo><mfrac><mrow><mn>1</mn></mrow><mrow><mn>12</mn></mrow></mfrac></mrow></math> (المساحة)</p>
 <p>(ب) الحجم الدوراني هو:</p>
 <p class="center"><math display="block"><mrow><mi>V</mi><mo>=</mo><mi>π</mi><msubsup><mo>∫</mo><mrow><mn>0</mn></mrow><mrow><mn>1</mn></mrow></msubsup><msup><mi>x</mi><mrow><mn>4</mn></mrow></msup><mi>d</mi><mi>x</mi><mo>=</mo><mi>π</mi><mfrac><mrow><msup><mi>x</mi><mrow><mn>5</mn></mrow></msup></mrow><mrow><mn>5</mn></mrow></mfrac><msubsup><mo maxsize="2.047em" minsize="2.047em">]</mo><mrow><mn>0</mn></mrow><mrow><mn>1</mn></mrow></msubsup></mrow></math></p>
@@ -1045,7 +1081,9 @@ table.values.tbl-scroll { display: block; overflow-x: auto; }   /* a value table
 <p class="center"><math display="block"><mrow><mo>=</mo><mi>π</mi><mo stretchy="false">[</mo><mfrac><mrow><mi>x</mi><mn>7</mn></mrow><mrow><mn>7</mn></mrow></mfrac><mo>−</mo><mfrac><mrow><msup><mi>x</mi><mrow><mn>5</mn></mrow></msup></mrow><mrow><mn>5</mn></mrow></mfrac><msubsup><mo stretchy="false">]</mo><mrow><mn>0</mn></mrow><mrow><mn>1</mn></mrow></msubsup></mrow></math></p>
 <p class="center"><math display="block"><mrow><mo>=</mo><mfrac><mrow><mn>2</mn><mi>π</mi></mrow><mrow><mn>35</mn></mrow></mfrac></mrow></math></p>
 <p>ولاحظ أن هذا الناتج هو حاصل طرح النتيجة في البند (ب) من النتيجة في البند (أ).</p>
+</div>
 <div class="pb block" data-page="379" id="p379"></div>
+<div class="box cont">
 <p class="center"><math display="block"><mrow><mo>=</mo><mfrac><mrow><mn>2</mn><mi>π</mi></mrow><mrow><mn>35</mn></mrow></mfrac><mo>=</mo><mo stretchy="false">|</mo><mfrac><mrow><mi>π</mi></mrow><mrow><mn>7</mn></mrow></mfrac><mo>−</mo><mfrac><mrow><mi>π</mi></mrow><mrow><mn>5</mn></mrow></mfrac><mo stretchy="false">|</mo></mrow></math></p>
 <p class="callout-title">تدريب (3)</p>
 <p>نرسم الاقترانين رسماً تقريبياً لفهم الحل:</p>
@@ -1062,7 +1100,9 @@ table.values.tbl-scroll { display: block; overflow-x: auto; }   /* a value table
 <p class="center"><math display="block"><mrow><mo>=</mo><mn>2</mn><mi>π</mi><msubsup><mo>∫</mo><mrow><mn>1</mn></mrow><mrow><mn>4</mn></mrow></msubsup><mo stretchy="false">(</mo><msup><mi>x</mi><mrow><mn>3</mn></mrow></msup><mo>+</mo><mn>5</mn><mi>x</mi><mo>−</mo><msup><mi>x</mi><mrow><mfrac><mrow><mn>3</mn></mrow><mrow><mn>2</mn></mrow></mfrac></mrow></msup><mo stretchy="false">)</mo><mi>d</mi><mi>x</mi></mrow></math></p>
 <p class="center"><math display="block"><mrow><mo>=</mo><mn>2</mn><mi>π</mi><mo stretchy="false">[</mo><mfrac><mrow><msup><mi>x</mi><mrow><mn>4</mn></mrow></msup></mrow><mrow><mn>4</mn></mrow></mfrac><mo>+</mo><mfrac><mrow><mn>5</mn><msup><mi>x</mi><mrow><mn>2</mn></mrow></msup></mrow><mrow><mn>2</mn></mrow></mfrac><mo>−</mo><mfrac><mrow><mn>2</mn></mrow><mrow><mn>5</mn></mrow></mfrac><msup><mi>x</mi><mrow><mfrac><mrow><mn>5</mn></mrow><mrow><mn>2</mn></mrow></mfrac></mrow></msup><msubsup><mo stretchy="false">]</mo><mrow><mn>1</mn></mrow><mrow><mn>4</mn></mrow></msubsup></mrow></math></p>
 <p class="center"><math display="block"><mrow><mo>=</mo><mn>2</mn><mi>π</mi><mo stretchy="false">(</mo><mn>91.2</mn><mo>−</mo><mn>2.35</mn><mo stretchy="false">)</mo><mo>=</mo><mn>177.7</mn><mspace width="0.167em"></mspace><mi>π</mi></mrow></math></p>
+</div>
 <div class="pb block" data-page="380" id="p380"></div>
+<div class="box cont">
 <p class="callout-title">تدريب (4)</p>
 <div class="row"><span class="text">1)</span><math display="block"><mrow><mi>L</mi><mo>=</mo><msubsup><mo>∫</mo><mrow><mn>1</mn></mrow><mrow><mi>e</mi></mrow></msubsup><msqrt><mrow><mn>1</mn><mo>+</mo><mn>1</mn><mo lspace="0" rspace="0">/</mo><msup><mi>y</mi><mrow><mn>2</mn></mrow></msup></mrow></msqrt><mi>d</mi><mi>y</mi><mo>=</mo><mn>2.003</mn></mrow></math></div>
 <div class="row"><span class="text">2)</span><math display="block"><mrow><mi>L</mi><mo>=</mo><msqrt><mrow><mn>2</mn></mrow></msqrt><msubsup><mo>∫</mo><mrow><mn>0</mn></mrow><mrow><mn>10</mn></mrow></msubsup><mi>t</mi><mspace width="0.167em"></mspace><mi>d</mi><mi>t</mi><mo>=</mo><mn>14.142</mn></mrow></math></div>
@@ -1104,7 +1144,9 @@ table.values.tbl-scroll { display: block; overflow-x: auto; }   /* a value table
 <div class="grid">
 <div class="item"><span>(2)</span><math display="inline"><mrow><mn>523.6</mn></mrow></math></div>
 </div>
+</div>
 <div class="pb block" data-page="381" id="p381"></div>
+<div class="box cont">
 <p>(3) حول محور <math display="inline"><mrow><mi>x</mi></mrow></math>: 301.6 حول محور <math display="inline"><mrow><mi>y</mi></mrow></math>: 452.4 .</p>
 <p>(4) 20.55 .</p>
 <p>(5) حول محور <math display="inline"><mrow><mi>x</mi></mrow></math>: <math display="inline"><mrow><mfrac><mrow><msup><mi>π</mi><mrow><mn>2</mn></mrow></msup></mrow><mrow><mn>8</mn></mrow></mfrac></mrow></math> حول محور <math display="inline"><mrow><mi>y</mi></mrow></math>: <math display="inline"><mrow><mfrac><mrow><msup><mi>π</mi><mrow><mn>2</mn></mrow></msup><mo>−</mo><mn>2</mn><mi>π</mi></mrow><mrow><mn>4</mn></mrow></mfrac></mrow></math></p>
@@ -1191,6 +1233,7 @@ table.values.tbl-scroll { display: block; overflow-x: auto; }   /* a value table
      3. otherwise shrink the broken lines (down to 80%);
      4. as a last resort, let that one equation scroll sideways inside the column.
    A value table wider than the column is shrunk a little, then scrolls sideways.
+   A value table cut by a page break gets the same column widths in both parts.
    Re-runs when the window is resized. The page HTML is never changed on disk. */
 (function () {
   var REL = /^(=|⇒|⇐|⇔|→|≈|≃|≅|≡|≠|≤|≥|<|>|∼)$/;
@@ -1269,6 +1312,24 @@ table.values.tbl-scroll { display: block; overflow-x: auto; }   /* a value table
     for (var s of [1, 0.92, 0.85, 0.8]) { tb.style.fontSize = s === 1 ? '' : s + 'em'; if (tb.scrollWidth <= room + 0.5) return; }
     tb.classList.add('tbl-scroll');
   }
+  function alignTableParts() {          // a table cut by a page: both parts get the same column widths
+    document.querySelectorAll('.book table.values.cont').forEach(function (part) {
+      var all = Array.from(document.querySelectorAll('.book table.values'));
+      var first = all[all.indexOf(part) - 1];
+      while (first && first.classList.contains('cont')) first = all[all.indexOf(first) - 1];
+      if (!first) return;
+      var row = first.querySelector('tbody tr') || first.querySelector('tr');
+      if (!row || row.querySelector('[colspan]')) return;
+      var total = first.getBoundingClientRect().width;
+      var widths = Array.from(row.children).map(function (c) { return (c.getBoundingClientRect().width / total * 100).toFixed(2) + '%'; });
+      [first].concat(all.filter(function (t, i) { return i > all.indexOf(first) && t.classList.contains('cont'); })).forEach(function (t) {
+        if (t.querySelector('colgroup.parts')) return;
+        var cg = document.createElement('colgroup'); cg.className = 'parts';
+        widths.forEach(function (w) { var c = document.createElement('col'); c.style.width = w; cg.appendChild(c); });
+        t.insertBefore(cg, t.firstChild); t.style.tableLayout = 'fixed';
+      });
+    });
+  }
   function reset() {
     document.querySelectorAll('.book table.values').forEach(function (tb) { tb.style.fontSize = ''; tb.classList.remove('tbl-scroll'); });
     saved.forEach(function (orig, m) { m.replaceChildren(orig.cloneNode(true)); m.style.fontSize = ''; delete m.dataset.basePx; m.classList.remove('eq-broken', 'eq-scroll'); });
@@ -1283,7 +1344,7 @@ table.values.tbl-scroll { display: block; overflow-x: auto; }   /* a value table
   }
   var t, lastW = 0;
   function later() { clearTimeout(t); t = setTimeout(function () { if (innerWidth !== lastW) { lastW = innerWidth; run(); } }, 150); }
-  function start() { lastW = innerWidth; run(); addEventListener('resize', later); }
+  function start() { lastW = innerWidth; alignTableParts(); run(); addEventListener('resize', later); }
   var ready = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { ready.then(start); });
   else ready.then(start);

@@ -35,10 +35,10 @@ p { margin: 0 0 .75rem; }
 .row { display: flex; align-items: center; gap: 1rem; margin: .25rem 0; }
 .row > .label { flex: none; min-width: 4.5rem; font-weight: 700; color: var(--accent); }
 .row > math { flex: 1; direction: ltr; }
-.center { direction: rtl; text-align: center; margin: .5rem 0; display: block; }
+.center { text-align: center; margin: .5rem 0; display: block; }   /* no direction: follows the page (rtl in Arabic books, ltr in English) */
 ol.objectives { padding-inline-start: 1.5rem; margin: 0; }
 ol.objectives li { margin-bottom: .25rem; }
-.grid { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem 1.5rem; direction: rtl; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem 1.5rem; }   /* no direction: follows the page */
 .grid .item { display: flex; align-items: center; gap: .6rem; }
 .grid math { direction: ltr; }
 .item { display: flex; gap: .6rem; margin: .25rem 0; }
@@ -99,7 +99,7 @@ nav.toc li { margin: 0; }
 nav.toc a { display: flex; align-items: baseline; gap: .5rem; color: inherit; text-decoration: none; padding: .1rem 0; }
 nav.toc a:hover .toc-text { color: var(--accent); text-decoration: underline; }
 .toc-dots { flex: 1; border-bottom: 2px dotted var(--toc-dots); transform: translateY(-.3em); min-width: 1rem; }
-.toc-page { flex: none; min-width: 1.75rem; text-align: left; direction: ltr; font-variant-numeric: tabular-nums; }
+.toc-page { flex: none; min-width: 1.75rem; text-align: end; font-variant-numeric: tabular-nums; }
 li.toc-1 > a { font-weight: 700; margin-top: .5rem; }
 li.toc-2 > a { padding-inline-start: 1.25rem; }
 li.toc-3 > a { padding-inline-start: 2.5rem; font-size: .95rem; }
@@ -173,9 +173,10 @@ h2, h3, h2.sub, .callout-title, .unit-title, .toc-title { color: #006991; }
 /* Table header cells: #e7f1f6 background, black text; borders unchanged */
 table.values th, .book table th { background-color: #e7f1f6; color: #000000; }
 
-/* ===== v6: page markers (original page numbers) shown as "صفحة N" ===== */
+/* ===== v6: page markers (original page numbers) shown as "صفحة N" ("Page N" in English books, see v12) ===== */
 .pb { scroll-margin-top: 1rem; }
-/* Inline marker: where a printed page ends in the middle of a paragraph (shows the number of the page that ends there) */
+/* Inline marker: NOT produced by the build any more (v11: the splitter always cuts the content instead).
+   Kept only so older files still display. */
 .pb:not(.block) {
   display: inline-block; vertical-align: baseline; margin-inline: .4em;
   padding: 0 .65em; border: 1px solid #006991; border-radius: 999px;
@@ -183,7 +184,7 @@ table.values th, .book table th { background-color: #e7f1f6; color: #000000; }
   unicode-bidi: isolate; white-space: nowrap;
 }
 .pb:not(.block)::before { content: "صفحة " attr(data-page); }
-/* Block marker: placed AFTER the content of its printed page (line with the label on its left end) */
+/* Block marker: placed AFTER the content of its printed page (line with the label at its end: left edge in Arabic books, right edge in English) */
 .pb.block {
   display: flex; justify-content: flex-end; margin: 1.25rem 0 1rem;
   background: linear-gradient(#006991, #006991) center / 100% 1px no-repeat;
@@ -299,7 +300,7 @@ h1.sec.sec-center { text-align: center; }
 .hl { color: #006991; font-weight: 700; }
 /* Table captions are colored and centered in print */
 .book p.table-caption { text-align: center; font-size: 1.05rem; font-weight: 700; color: #006991; margin: .75rem 0 .25rem; }
-/* Centered lines are right-to-left (Arabic text + equation reads correctly); the math itself stays left-to-right */
+/* Centered lines follow the page direction (Arabic text + equation reads correctly in both languages); the math itself stays left-to-right */
 .center math, .grid math, .row > math { direction: ltr; }
 /* Figures: the build sets the figure's width (share of the text block, as in print);
    the crop fills that width and the figure is centered, never wider than the text. */
@@ -316,6 +317,35 @@ math.eq-scroll { max-width: 100%; overflow-x: auto; overflow-y: hidden; }
 math[display="block"].eq-scroll { display: block math; }
 math:not([display="block"]).eq-scroll { display: inline-block; vertical-align: middle; }
 table.values.tbl-scroll { display: block; overflow-x: auto; }   /* a value table still too wide after shrinking scrolls sideways */
+
+/* ===== v11: page splitter cuts everything + footnotes ===== */
+/* Every printed page ends the same way: its content, then its footnotes, then the «صفحة N» splitter
+   (<div class="pb block">). Content cut by a page break is never joined: it is shown in two parts.
+   The build marks each second part with class "cont". */
+li.cont { list-style: none; }                         /* rest of a list item cut by the page: no second number */
+.callout.cont > .callout-body { border-top-style: dashed; }   /* second part of a box: frame only, no title row */
+.infobox.cont { margin-top: .5rem; }
+
+/* Footnotes: mark in the text, notes at the end of their page (before the splitter).
+   Numbers restart at 1 in each unit file. The separator line sits at the start side
+   (right in Arabic books, left in English books), as in print. */
+.fn-ref { font-size: .7em; line-height: 0; vertical-align: super; }
+.fn-ref a { color: #006991; text-decoration: none; font-weight: 700; padding: 0 .1em; }
+.footnotes { margin: 1.5rem 0 .5rem; }
+.footnotes::before { content: ""; display: block; width: 35%; border-top: 1px solid var(--ink); margin-bottom: .5rem; }
+.footnotes ol { list-style: none; margin: 0; padding: 0; }
+.book .footnotes li { font-size: 1rem; line-height: 1.8; margin: 0 0 .3rem; text-align: justify; }
+.fn-num { font-size: .75em; vertical-align: super; line-height: 0; margin-inline-end: .3em; color: #006991; font-weight: 700; }
+.fn-back { text-decoration: none; color: #006991; margin-inline-start: .35em; font-size: .9em; }
+.footnotes li:target, .fn-ref:target { background: #e7f1f6; }
+:target { scroll-margin-top: 2rem; }
+
+/* ===== v12: page label in the book's language ===== */
+/* Arabic books (<html lang="ar">): «صفحة N» (rules above). English books (<html lang="en">): «Page N». */
+:lang(en) .pb:not(.block)::before, :lang(en) .pb.block::before { content: "Page " attr(data-page); }
+:lang(en) .pb[data-page=""]:not(.block)::before, :lang(en) .pb:not([data-page]):not(.block)::before,
+:lang(en) .pb.block[data-page=""]::before, :lang(en) .pb.block:not([data-page])::before { content: "Page"; }
+html.hide-pb:lang(en) .pb:not(.block)::before, html.hide-pb:lang(en) .pb.block::before { content: none; }
 </style>
 </head>
 <body>
@@ -346,8 +376,12 @@ table.values.tbl-scroll { display: block; overflow-x: auto; }   /* a value table
 <ol>
 <li>تحدد فترات التزايد والتناقص للاقتران باستخدام اشارة المشتقة الاولى.</li>
 <li>تجد القيم القصوى للاقتران.</li>
-<li>تحدد القيم الحرجة، ونقط الانعطاف، للاقتران.<span class="pb" data-page="113" id="p113"></span></li>
-
+<li>تحدد القيم الحرجة، ونقط الانعطاف، للاقتران.</li>
+</ol>
+</div>
+<div class="pb block" data-page="113" id="p113"></div>
+<div class="box cont">
+<ol class="cont" start="4">
 <li>ترسم منحنيات الاقترانات المختلفة.</li>
 <li>تجد خطوط التقارب لاقتران معطى.</li>
 <li>تحل مسائل تطبيقية على القيم القصوى.</li>
@@ -356,8 +390,6 @@ table.values.tbl-scroll { display: block; overflow-x: auto; }   /* a value table
 <li>تحل مسائل حول نظريتي رول، والقيمة المتوسطة.</li>
 <li>تستخدم قاعدة لوبيتال في ايجاد نهايات صيغ غير معرفة.</li>
 </ol>
-
-
 </div>
 <h2 class="sub" id="s4">3.1 أقسام الوحدة</h2>
 <div class="box">
@@ -411,7 +443,9 @@ table.values.tbl-scroll { display: block; overflow-x: auto; }   /* a value table
 <p>(3) إذا كان <math display="inline"><mrow><msup><mi>f</mi><mi>′</mi></msup><mo stretchy="false">(</mo><msub><mi>x</mi><mrow><mn>1</mn></mrow></msub><mo stretchy="false">)</mo><mo>=</mo><mn>0</mn></mrow></math> لجميع قيم <math display="inline"><mrow><mi>x</mi><mo>∈</mo><mo stretchy="false">]</mo><mi>a</mi><mo>,</mo><mi>b</mi><mo stretchy="false">[</mo></mrow></math> ، فإن <math display="inline"><mrow><mi>f</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo></mrow></math> اقتران ثابت في الفترة <math display="inline"><mrow><mo stretchy="false">[</mo><mi>a</mi><mo>,</mo><mi>b</mi><mo stretchy="false">]</mo></mrow></math> أي أن <math display="inline"><mrow><mi>f</mi><mspace width="0.167em"></mspace><mo stretchy="false">(</mo><msub><mi>x</mi><mrow><mn>1</mn></mrow></msub><mo stretchy="false">)</mo><mo>=</mo><mi>f</mi><mo stretchy="false">(</mo><msub><mi>x</mi><mrow><mn>2</mn></mrow></msub><mo stretchy="false">)</mo></mrow></math> لجميع قيم <math display="inline"><mrow><msub><mi>x</mi><mrow><mn>2</mn></mrow></msub><mo>,</mo><msub><mi>x</mi><mrow><mn>1</mn></mrow></msub></mrow></math> في الفترة <math display="inline"><mrow><mo stretchy="false">[</mo><mi>a</mi><mo>,</mo><mi>b</mi><mo stretchy="false">]</mo></mrow></math>.</p>
 <aside class="callout" data-kind="example"><header class="callout-head"><h3 class="callout-title">مثال (1)</h3><span aria-hidden="true" class="icon-slot" data-icon="example"></span></header><div class="callout-body">
 <p>إذا كان الاقتران <math display="inline"><mrow><mi>f</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo><mo>=</mo><mn>2</mn><msup><mi>x</mi><mrow><mn>3</mn></mrow></msup><mo>−</mo><mn>6</mn><mi>x</mi></mrow></math> معرفاً على مجموعة الأعداد الحقيقية <math display="inline"><mrow><mi>R</mi></mrow></math>، فجد الفترات في مجاله التي يكون فيها <math display="inline"><mrow><mi>f</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo></mrow></math> متزايداً، وتلك التي يكون فيها متناقصاً.</p>
+</div></aside>
 <div class="pb block" data-page="117" id="p117"></div>
+<aside class="callout cont" data-kind="example"><div class="callout-body">
 <figure class="fig" style="width:58%"><img alt="الشكل (3)" loading="lazy" src="images/u03-s107-F1.png"/></figure>
 <p class="fig-caption">الشكل (3)</p>
 </div></aside>
@@ -466,7 +500,9 @@ table.values.tbl-scroll { display: block; overflow-x: auto; }   /* a value table
 <p>(1) يكون للاقتران <math display="inline"><mrow><mi>f</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo></mrow></math> قيمة عظمى محلية عند <math display="inline"><mrow><mi>b</mi></mrow></math> هي <math display="inline"><mrow><mi>f</mi><mo stretchy="false">(</mo><mi>b</mi><mo stretchy="false">)</mo></mrow></math> إذا أمكن إيجاد فترة مفتوحة <math display="inline"><mrow><mi>C</mi></mrow></math> تحتوي <math display="inline"><mrow><mi>b</mi></mrow></math> بحيث أن :</p>
 <p class="center"><math display="inline"><mrow><mi>f</mi><mo stretchy="false">(</mo><mi>b</mi><mo stretchy="false">)</mo><mo>≥</mo><mi>f</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo></mrow></math> لجميع قيم <math display="inline"><mrow><mi>x</mi><mo>∈</mo><mo stretchy="false">(</mo><mi>A</mi><mo>∩</mo><mi>C</mi><mo stretchy="false">)</mo></mrow></math></p>
 <p>(2) يكون للاقتران <math display="inline"><mrow><mi>f</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo></mrow></math> قيمة صغرى محلية عند <math display="inline"><mrow><mi>b</mi></mrow></math> هي <math display="inline"><mrow><mi>f</mi><mo stretchy="false">(</mo><mi>b</mi><mo stretchy="false">)</mo></mrow></math> إذا أمكن إيجاد فترة مفتوحة <math display="inline"><mrow><mi>C</mi></mrow></math> تحوي <math display="inline"><mrow><mi>b</mi></mrow></math> بحيث أن:</p>
+</div></aside>
 <div class="pb block" data-page="120" id="p120"></div>
+<aside class="callout cont" data-kind="definition"><div class="callout-body">
 <p class="center"><math display="inline"><mrow><mi>f</mi><mo stretchy="false">(</mo><mi>b</mi><mo stretchy="false">)</mo><mo>≤</mo><mi>f</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo></mrow></math> لجميع قيم <math display="inline"><mrow><mi>x</mi><mo>∈</mo><mo stretchy="false">(</mo><mi>A</mi><mo>∩</mo><mi>C</mi><mo stretchy="false">)</mo></mrow></math></p>
 <p>(3) يكون للاقتران <math display="inline"><mrow><mi>f</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo></mrow></math> قيمة عظمى مطلقة على الفترة <math display="inline"><mrow><mi>A</mi></mrow></math> عند <math display="inline"><mrow><mi>b</mi></mrow></math> هي <math display="inline"><mrow><mi>f</mi><mo stretchy="false">(</mo><mi>b</mi><mo stretchy="false">)</mo></mrow></math> إذا كان <math display="inline"><mrow><mi>f</mi><mo stretchy="false">(</mo><mi>b</mi><mo stretchy="false">)</mo><mo>≥</mo><mi>f</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo></mrow></math> لجميع قيم <math display="inline"><mrow><mi>x</mi><mo>∈</mo><mi>A</mi></mrow></math>.</p>
 <p>(4) يكون للاقتران قيمة صغرى مطلقة على الفترة <math display="inline"><mrow><mi>A</mi></mrow></math> عند <math display="inline"><mrow><mi>b</mi></mrow></math> هي <math display="inline"><mrow><mi>f</mi><mo stretchy="false">(</mo><mi>b</mi><mo stretchy="false">)</mo></mrow></math> إذا كان <math display="inline"><mrow><mi>f</mi><mo stretchy="false">(</mo><mi>b</mi><mo stretchy="false">)</mo><mo>≤</mo><mi>f</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo></mrow></math> لجميع قيم <math display="inline"><mrow><mi>x</mi><mo>∈</mo><mi>A</mi></mrow></math> .</p>
@@ -711,7 +747,9 @@ table.values.tbl-scroll { display: block; overflow-x: auto; }   /* a value table
 <p>فإذا كان الاقتران <math display="inline"><mrow><mi>f</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo></mrow></math> معرفاً على الفترة <math display="inline"><mrow><mo stretchy="false">[</mo><mi>a</mi><mo>,</mo><mi>b</mi><mo stretchy="false">]</mo></mrow></math> وكانت <math display="inline"><mrow><mi>c</mi><mo>∈</mo><mo stretchy="false">]</mo><mi>a</mi><mo>,</mo><mi>b</mi><mo stretchy="false">[</mo></mrow></math> فإن النقطة <math display="inline"><mrow><mo stretchy="false">(</mo><mi>c</mi><mo>,</mo><mi>f</mi><mo stretchy="false">(</mo><mi>c</mi><mo stretchy="false">)</mo><mo stretchy="false">)</mo></mrow></math> تكون نقطة انعطاف إذا تحقق الشرطان التاليان:</p>
 <p>(1) الاقتران <math display="inline"><mrow><mi>f</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo></mrow></math> متصل عند <math display="inline"><mrow><mi>x</mi><mo>=</mo><mi>c</mi></mrow></math>.</p>
 <p>(2) منحنى الاقتران <math display="inline"><mrow><mi>f</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo></mrow></math> يغير اتجاه تقعره حول <math display="inline"><mrow><mi>c</mi></mrow></math> من الأعلى إلى الأسفل أو بالعكس.</p>
+</div></aside>
 <div class="pb block" data-page="134" id="p134"></div>
+<aside class="callout cont" data-kind="definition"><div class="callout-body">
 <p>وتكون نقطة الانعطاف نقطة انعطاف أفقي إذا تحقق الشرطان الإضافيان التاليان:</p>
 <div class="row"><span class="text">(3)</span><math display="block"><mrow><msup><mi>f</mi><mi>′</mi></msup><mo stretchy="false">(</mo><mi>c</mi><mo stretchy="false">)</mo><mo>=</mo><mn>0</mn></mrow></math></div>
 <div class="row"><span class="text">(4)</span><math display="block"><mrow><msup><mi>f</mi><mi>″</mi></msup><mo stretchy="false">(</mo><mi>c</mi><mo stretchy="false">)</mo><mo>=</mo><mn>0</mn></mrow></math></div>
@@ -1120,9 +1158,11 @@ table.values.tbl-scroll { display: block; overflow-x: auto; }   /* a value table
 <p>1- قسم العدد 16 إلى جزءين بحيث يكون حاصل ضربهما أكبر ما يمكن.</p>
 <p>2- جد على منحنى <math display="inline"><mrow><mi>y</mi><mo>=</mo><msup><mi>x</mi><mrow><mn>2</mn></mrow></msup><mo>+</mo><mn>1</mn></mrow></math> أقرب نقطة إلى النقطة <math display="inline"><mrow><mo stretchy="false">(</mo><mn>3</mn><mo>,</mo><mn>1</mn><mo stretchy="false">)</mo></mrow></math>.</p>
 <p>3- نافذة على شكل مستطيل يعلوه مثلث متساوي الساقين ارتفاعه <math display="inline"><mrow><mfrac><mrow><mn>3</mn></mrow><mrow><mn>8</mn></mrow></mfrac></mrow></math> طول قاعدته. إذا كان محيط النافذة 15 متراً، فأوجد أبعاد النافذة التي تجعل مساحتها أكبر ما يمكن.</p>
-<p>4- أطلقت قذيفة باتجاه يصنع زاوية <math display="inline"><mrow><mi>θ</mi></mrow></math> فوق الأفق، وبسرعة ابتدائية مقدارها: <math display="inline"><mrow><mi>u</mi></mrow></math> متراً/ثانية، فارتفعت <math display="inline"><mrow><mi>h</mi></mrow></math> متراً بعد <math display="inline"><mrow><mi>t</mi></mrow></math> من الثواني. فإذا علمت أن <math display="inline"><mrow><mi>h</mi><mo>=</mo><mi>u</mi><mspace width="0.167em"></mspace><mi>t</mi><mi>sin</mi><mspace width="0.167em"></mspace><mi>θ</mi><mo>−</mo><mfrac><mrow><mn>1</mn></mrow><mrow><mn>2</mn></mrow></mfrac><mi>g</mi><mspace width="0.167em"></mspace><msup><mi>t</mi><mrow><mn>2</mn></mrow></msup></mrow></math>،<span class="pb" data-page="156" id="p156"></span> حيث <math display="inline"><mrow><mi>g</mi></mrow></math> هي عجلة الجاذبية الأرضية، فما أكبر ارتفاع يمكن أن تصل إليه القذيفة؟ وما الزمن اللازم لذلك؟.</p>
-
-
+<p>4- أطلقت قذيفة باتجاه يصنع زاوية <math display="inline"><mrow><mi>θ</mi></mrow></math> فوق الأفق، وبسرعة ابتدائية مقدارها: <math display="inline"><mrow><mi>u</mi></mrow></math> متراً/ثانية، فارتفعت <math display="inline"><mrow><mi>h</mi></mrow></math> متراً بعد <math display="inline"><mrow><mi>t</mi></mrow></math> من الثواني. فإذا علمت أن <math display="inline"><mrow><mi>h</mi><mo>=</mo><mi>u</mi><mspace width="0.167em"></mspace><mi>t</mi><mi>sin</mi><mspace width="0.167em"></mspace><mi>θ</mi><mo>−</mo><mfrac><mrow><mn>1</mn></mrow><mrow><mn>2</mn></mrow></mfrac><mi>g</mi><mspace width="0.167em"></mspace><msup><mi>t</mi><mrow><mn>2</mn></mrow></msup></mrow></math>،</p>
+</div></aside>
+<div class="pb block" data-page="156" id="p156"></div>
+<aside class="callout cont" data-kind="quiz"><div class="callout-body">
+<p class="cont">حيث <math display="inline"><mrow><mi>g</mi></mrow></math> هي عجلة الجاذبية الأرضية، فما أكبر ارتفاع يمكن أن تصل إليه القذيفة؟ وما الزمن اللازم لذلك؟.</p>
 <p>5- إذا كانت المساحة الكلية لاسطوانة قائمة هي <math display="inline"><mrow><mn>150</mn><mi>π</mi></mrow></math> متراً مربعاً، فما أبعاد الأسطوانة التي تجعل حجمها أكبر ما يمكن؟</p>
 <p>6- مثلث قائم الزاوية طول وتره 26 سم، ما طول ضلعيه الآخرين حين يكون طول العمود النازل من رأس القائمة على الوتر أكبر ما يمكن؟</p>
 <p>7- ما هي أقل كلفة ممكنة لتبطين حوض على شكل متوازي مستطيلات مكشوف بالرصاص قاعدته مربعة ويتسع لـ 500 متر مكعب من الماء، إذا كانت كلفة التبطين 8 قروش للمتر المربع؟</p>
@@ -1221,17 +1261,19 @@ table.values.tbl-scroll { display: block; overflow-x: auto; }   /* a value table
 <li>بدأت سفينتان السير من نقطة واحدة، فإذا بدأت الأولى سيرها في الساعة العاشرة صباحاً متجهة نحو الشرق بمعدل 9 أميال/الساعة، وبدأت الثانية سيرها في الساعة الحادية عشرة صباحاً متجهة نحو الجنوب بمعدل 12 ميلاً/الساعة، فبأي معدل تبتعد السفينتان احداهما عن الأخرى عند الساعة الثانية عشرة ظهراً؟</li>
 <li>من سقوط حجر في بحيرة ساكنة تكونت موجات دائرية متلاحقة ذات مركز واحد. فإذا كان نصف قطر الموجة يتزايد بمعدل 1.5 متراً/ثانية، فبأي معدل تزيد مساحة الموجة في نهاية ثانيتين؟</li>
 <li>تكبر مساحة دائرة بمعدل 4 سم مربع/الثانية، فبأي معدل يكبر نصف قطرها عندما يكون نصف القطر 4 سنتمترات؟</li>
-<li>جسم مكون من اسطوانة دائرية قائمة يعلوها نصف كرة، فإذا كان نصف قطر قاعدتيهما المشتركة يزداد بمعدل 0.75 سم/الثانية، كما أن ارتفاع الاسطوانة يزداد<span class="pb" data-page="163" id="p163"></span> بمعدل 0.5 سم/الثانية، فبأي معدل يزداد حجم الجسم عندما يكون نصف القطر 8 سم وارتفاعه 12 سم؟</li>
-
-
+<li>جسم مكون من اسطوانة دائرية قائمة يعلوها نصف كرة، فإذا كان نصف قطر قاعدتيهما المشتركة يزداد بمعدل 0.75 سم/الثانية، كما أن ارتفاع الاسطوانة يزداد</li>
+</ol>
+</div></aside>
+<div class="pb block" data-page="163" id="p163"></div>
+<aside class="callout cont" data-kind="quiz"><div class="callout-body">
+<ol class="cont" start="8">
+<li class="cont">بمعدل 0.5 سم/الثانية، فبأي معدل يزداد حجم الجسم عندما يكون نصف القطر 8 سم وارتفاعه 12 سم؟</li>
 <li>أفلت طفل يركب سيارة بالوناً وارتفع إلى الأعلى، فإذا كانت السيارة تسير بسرعة 50 كم/الساعة، والبالون يرتفع بسرعة 10 كم/الساعة، فما سرعة ابتعادهما عن بعضهما بعد ساعتين؟</li>
 <li>أثبت أنه إذا كان نصف قطر كرة يزداد بمعدل سنتمتر واحد في الثانية، فإن معدل ازدياد حجمها، عندما يكون نصف القطر متراً واحداً، يبلغ أربعة أمثال معدل ازدياد الحجم عندما يكون نصف القطر 50 سنتمتراً.</li>
 <li>مخروط ذو حجم ثابت، يزداد نصف قطر قاعدته بمعدل 3 سم/الثانية، فبأي معدل يتغير ارتفاعه عندما يكون نصف قطر قاعدته 4 سم وارتفاعه 5 سم؟</li>
 <li>وعاء على شكل مخروط دائري قائم الزاوية زاوية رأسه <math display="inline"><mrow><msup><mn>90</mn><mrow><mo>∘</mo></mrow></msup></mrow></math> وارتفاعه 5 أقدام، ونصف قطر قاعدته تساوي 5 أقدام وضع بحيث كان محوره رأسياً ورأسه إلى أسفل، فإذا صب فيه ماء بمعدل 8 أقدام مكعبة في الدقيقة، فما معدل ازدياد عمق الماء فيه عندما يكون:
 <p>(أ) العمق 4 أقدام؟    (ب) الوعاء يحوي 60 قدماً مكعباً من الماء؟</p></li>
 </ol>
-
-
 </div></aside>
 <div class="pb block" data-page="164" id="p164"></div>
 <h1 class="sec" id="s20">6. تطبيقات متفرقة</h1>
@@ -1370,7 +1412,9 @@ table.values.tbl-scroll { display: block; overflow-x: auto; }   /* a value table
 <p>أ. <math display="inline"><mrow><mi>f</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo><mo>=</mo><mn>3</mn><msup><mi>x</mi><mrow><mn>2</mn></mrow></msup><mo>−</mo><mn>5</mn></mrow></math> حيث <math display="inline"><mrow><mo>−</mo><mn>1</mn><mo>≤</mo><mi>x</mi><mo>≤</mo><mn>1</mn></mrow></math> .</p>
 <p>ب. <math display="inline"><mrow><mi>f</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo><mo>=</mo><mo stretchy="false">|</mo><mi>x</mi><mo>−</mo><mn>2</mn><mo stretchy="false">|</mo></mrow></math> حيث <math display="inline"><mrow><mo>−</mo><mn>3</mn><mo>≤</mo><mi>x</mi><mo>≤</mo><mn>3</mn></mrow></math> .</p>
 <p>ج. <math display="inline"><mrow><mi>f</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo><mo>=</mo><mn>2</mn></mrow></math> عند <math display="inline"><mrow><mi>x</mi><mo>=</mo><mn>4</mn><mo>,</mo><mi>x</mi><mo>=</mo><mn>2</mn></mrow></math> .</p>
+</div></aside>
 <div class="pb block" data-page="172" id="p172"></div>
+<aside class="callout cont" data-kind="quiz"><div class="callout-body">
 <p>د. <math display="inline"><mrow><mi>f</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo><mo>=</mo><mn>3</mn></mrow></math> عند <math display="inline"><mrow><mi>x</mi><mo>≠</mo><mn>4</mn><mo>,</mo><mi>x</mi><mo>≠</mo><mn>2</mn></mrow></math></p>
 <p>2- جد النقطة <math display="inline"><mrow><mo stretchy="false">(</mo><mi>c</mi><mo>,</mo><mi>f</mi><mo stretchy="false">(</mo><mi>c</mi><mo stretchy="false">)</mo><mo stretchy="false">)</mo></mrow></math> في منحنيات الاقترانات التالية والتي يكون عندها المماس موازياً للقاطع المار بالنقطتين <math display="inline"><mrow><mo stretchy="false">(</mo><mi>a</mi><mo>,</mo><mi>f</mi><mo stretchy="false">(</mo><mi>a</mi><mo stretchy="false">)</mo><mo stretchy="false">)</mo><mo>,</mo><mo stretchy="false">(</mo><mi>b</mi><mo>,</mo><mi>f</mi><mo stretchy="false">(</mo><mi>b</mi><mo stretchy="false">)</mo><mo stretchy="false">)</mo></mrow></math>حيث <math display="inline"><mrow><mi>a</mi><mo>&lt;</mo><mi>c</mi><mo>&lt;</mo><mi>b</mi></mrow></math></p>
 <p>أ. <math display="inline"><mrow><mi>f</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo><mo>=</mo><mn>3</mn><msup><mi>x</mi><mrow><mn>2</mn></mrow></msup><mo>−</mo><mn>4</mn><mi>x</mi><mo>+</mo><mn>5</mn></mrow></math> حيث <math display="inline"><mrow><mi>b</mi><mo>=</mo><mn>2</mn><mo>,</mo><mi>a</mi><mo>=</mo><mo>−</mo><mn>1</mn></mrow></math> .</p>
@@ -1461,14 +1505,16 @@ table.values.tbl-scroll { display: block; overflow-x: auto; }   /* a value table
 <div class="item"><span>4-</span><math display="block"><mrow><munder><mo>lim</mo><mrow><mi>x</mi><mo>→</mo><mn>5</mn></mrow></munder><mfrac><mrow><mi>x</mi><mo>−</mo><mn>5</mn></mrow><mrow><msqrt><mrow><mi>x</mi><mo>−</mo><mn>5</mn></mrow></msqrt><mo>−</mo><mn>4</mn></mrow></mfrac></mrow></math></div>
 <div class="item"><span>5-</span><math display="block"><mrow><munder><mo>lim</mo><mrow><mi>x</mi><mo>→</mo><msup><mn>0</mn><mrow><mo>+</mo></mrow></msup></mrow></munder><mfrac><mrow><mi>x</mi><mo>+</mo><mn>1</mn><mo>−</mo><mi>sec</mi><mspace width="0.167em"></mspace><mi>x</mi></mrow><mrow><msup><mi>x</mi><mrow><mn>2</mn></mrow></msup></mrow></mfrac></mrow></math></div>
 <div class="item"><span>6-</span><math display="block"><mrow><munder><mo>lim</mo><mrow><mi>x</mi><mo>→</mo><mo>∞</mo></mrow></munder><mi>x</mi><mi>sin</mi><mfrac><mrow><mn>1</mn></mrow><mrow><mi>x</mi></mrow></mfrac></mrow></math></div>
+</div>
+</div></aside>
 <div class="pb block" data-page="176" id="p176"></div>
+<aside class="callout cont" data-kind="quiz"><div class="callout-body">
+<div class="grid cont">
 <div class="item"><span>7-</span><math display="block"><mrow><munder><mo>lim</mo><mrow><mi>x</mi><mo>→</mo><msup><mn>3</mn><mrow><mo>+</mo></mrow></msup></mrow></munder><mfrac><mrow><msup><mi>x</mi><mrow><mn>2</mn></mrow></msup><mo>−</mo><mn>9</mn></mrow><mrow><msqrt><mrow><mi>x</mi><mo>−</mo><mn>3</mn></mrow></msqrt></mrow></mfrac></mrow></math></div>
 <div class="item"><span>8-</span><math display="block"><mrow><munder><mo>lim</mo><mrow><mi>x</mi><mo>→</mo><mn>0</mn></mrow></munder><mfrac><mrow><msup><mi>e</mi><mrow><mi>x</mi></mrow></msup><mo>−</mo><mn>1</mn></mrow><mrow><mn>4</mn><mi>sin</mi><mspace width="0.167em"></mspace><mi>x</mi></mrow></mfrac></mrow></math></div>
 <div class="item"><span>9-</span><math display="block"><mrow><munder><mo>lim</mo><mrow><mi>x</mi><mo>→</mo><mn>1</mn></mrow></munder><mo stretchy="false">(</mo><mi>x</mi><mo>−</mo><mn>1</mn><mo stretchy="false">)</mo><mi>ln</mi><mspace width="0.167em"></mspace><mi>x</mi></mrow></math></div>
 <div class="item"><span>10-</span><math display="block"><mrow><munder><mo>lim</mo><mrow><mi>x</mi><mo>→</mo><mn>1</mn></mrow></munder><mfrac><mrow><mi>sin</mi><mo stretchy="false">(</mo><mn>2</mn><mi>x</mi><mo>−</mo><mn>2</mn><mo stretchy="false">)</mo></mrow><mrow><mi>x</mi><mo>−</mo><mn>1</mn></mrow></mfrac></mrow></math></div>
 </div>
-
-
 </div></aside>
 <div class="pb block" data-page="177" id="p177"></div>
 <h1 class="sec" id="s25">7. الخلاصة</h1>
@@ -1504,7 +1550,9 @@ table.values.tbl-scroll { display: block; overflow-x: auto; }   /* a value table
 <div class="row"><span class="text">الحالة الثانية :عندما</span><math display="block"><mrow><mfrac><mrow><mi>f</mi><mspace width="0.167em"></mspace><mo stretchy="false">(</mo><mi>c</mi><mo>+</mo><mi>h</mi><mo stretchy="false">)</mo><mo>−</mo><mi>f</mi><mo stretchy="false">(</mo><mi>c</mi><mo stretchy="false">)</mo></mrow><mrow><mi>h</mi></mrow></mfrac><mo>≥</mo><mn>0</mn><mo>,</mo><mi>h</mi><mo>&lt;</mo><mn>0</mn></mrow></math></div>
 <p>لأن البسط في كلتا الحالتين إما أن يكون سالباً أو صفراً، وعليه فإذا اقتربت <math display="inline"><mrow><mi>h</mi></mrow></math> من الصفر خلال أخذها قيماً موجبة فإنه ينتج من الحالة الأولى أن:</p>
 <p class="center"><math display="block"><mrow><msup><mi>f</mi><mi>′</mi></msup><mo stretchy="false">(</mo><mi>c</mi><mo stretchy="false">)</mo><mo>≤</mo><mn>0</mn></mrow></math></p>
+</div>
 <div class="pb block" data-page="179" id="p179"></div>
+<div class="box cont">
 <p>أما إذا اقتربت <math display="inline"><mrow><mi>h</mi></mrow></math> من الصفر من خلال أخذها قيماً سالبة، فإنه ينتج من الحالة الثانية أن:</p>
 <p class="center"><math display="block"><mrow><msup><mi>f</mi><mi>′</mi></msup><mo stretchy="false">(</mo><mi>c</mi><mo stretchy="false">)</mo><mo>≥</mo><mn>0</mn></mrow></math></p>
 <p>وبما أن المشتقة موجودة بالفرض، فإنه يجب أن نحصل على نفس النهاية في الحالتين، أي:</p>
@@ -1521,7 +1569,9 @@ table.values.tbl-scroll { display: block; overflow-x: auto; }   /* a value table
 <p>وعندما تزداد <math display="inline"><mrow><mi>x</mi></mrow></math> لتصل إلى <math display="inline"><mrow><msub><mi>x</mi><mrow><mn>2</mn></mrow></msub></mrow></math> نجد أن <math display="inline"><mrow><mi>tan</mi><mspace width="0.167em"></mspace><mi>α</mi><mo>&lt;</mo><mn>0</mn></mrow></math> (لماذا؟)، وإذا زادت <math display="inline"><mrow><mi>x</mi></mrow></math> لتصل إلى <math display="inline"><mrow><msub><mi>x</mi><mrow><mn>3</mn></mrow></msub></mrow></math> تجد أن ميل المماس عندها يصبح مساوياً <math display="inline"><mrow><mi>tan</mi><msub><mi>α</mi><mrow><mn>2</mn></mrow></msub><mo>&lt;</mo><mn>0</mn></mrow></math> لأن <math display="inline"><mrow><msub><mi>α</mi><mrow><mn>2</mn></mrow></msub></mrow></math> أصبحت زاوية حادة، ويمكن القول إن ميل المماس عند النقط التي تكون عندها <math display="inline"><mrow><mi>x</mi><mo>&gt;</mo><msub><mi>x</mi><mrow><mn>2</mn></mrow></msub></mrow></math> يكون سالباً، وأن ميل المماس عند النقط التي تكون عندها <math display="inline"><mrow><mi>x</mi><mo>&gt;</mo><msub><mi>x</mi><mrow><mn>2</mn></mrow></msub></mrow></math> يكون موجباً. فما معنى هذا؟</p>
 <p>ألا ترى من ذلك أن <math display="inline"><mrow><msup><mi>f</mi><mi>′</mi></msup><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo></mrow></math> (الميل) اقتران متزايد في هذه الفترة؟ وبما أن مشتقة الاقتران المتزايد تكون موجبة، لذا فإن مشتقة <math display="inline"><mrow><mi>f</mi><msup><mspace width="0.167em"></mspace><mi>′</mi></msup><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo></mrow></math> تكون موجبة.</p>
 <p>أي أن <math display="inline"><mrow><msup><mi>f</mi><mi>″</mi></msup><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo></mrow></math> موجبة.</p>
+</div>
 <div class="pb block" data-page="180" id="p180"></div>
+<div class="box cont">
 <p class="callout-title">تدريب (4)</p>
 <p>الإجابة في الفقرة التالية للتدريب مباشرة.</p>
 <p class="callout-title">تدريب (5)</p>
@@ -1538,7 +1588,9 @@ table.values.tbl-scroll { display: block; overflow-x: auto; }   /* a value table
 <p>وبالتالي <math display="inline"><mrow><msup><mi>r</mi><mrow><mn>2</mn></mrow></msup><mo>=</mo><mn>1</mn><mo>−</mo><mo stretchy="false">(</mo><mn>1</mn><mo>−</mo><mi>h</mi><msup><mo stretchy="false">)</mo><mrow><mn>2</mn></mrow></msup><mo>⇐</mo><msup><mi>r</mi><mrow><mn>2</mn></mrow></msup><mo>+</mo><mo stretchy="false">(</mo><mn>1</mn><mo>−</mo><mi>h</mi><msup><mo stretchy="false">)</mo><mrow><mn>2</mn></mrow></msup><mo>=</mo><mn>1</mn></mrow></math></p>
 <p>ب) نشتق معادلة <math display="inline"><mrow><mo stretchy="false">(</mo><mi>V</mi><mo stretchy="false">)</mo></mrow></math> بالنسبة للزمن فنجد:</p>
 <p class="center"><math display="block"><mrow><mfrac><mrow><mi>d</mi><mi>v</mi></mrow><mrow><mi>d</mi><mi>t</mi></mrow></mfrac><mo>=</mo><mi>π</mi><msup><mi>h</mi><mrow><mn>2</mn></mrow></msup><mfrac><mrow><mi>d</mi><mi>r</mi></mrow><mrow><mi>d</mi><mi>t</mi></mrow></mfrac><mo>+</mo><mo stretchy="false">(</mo><mn>2</mn><mi>π</mi><mi>r</mi><mi>h</mi><mo>−</mo><mi>π</mi><msup><mi>h</mi><mrow><mn>2</mn></mrow></msup><mo stretchy="false">)</mo><mfrac><mrow><mi>d</mi><mi>h</mi></mrow><mrow><mi>d</mi><mi>t</mi></mrow></mfrac></mrow></math></p>
+</div>
 <div class="pb block" data-page="181" id="p181"></div>
+<div class="box cont">
 <p>ج) نعوّض <math display="inline"><mrow><mi>r</mi><mo>=</mo><mn>1</mn></mrow></math> وبالتالي <math display="inline"><mrow><mi>h</mi><mo>=</mo><mn>1</mn></mrow></math> فنجد علاقة بين <math display="inline"><mrow><mfrac><mrow><mi>d</mi><mi>r</mi></mrow><mrow><mi>d</mi><mi>t</mi></mrow></mfrac></mrow></math> و <math display="inline"><mrow><mfrac><mrow><mi>d</mi><mi>h</mi></mrow><mrow><mi>d</mi><mi>t</mi></mrow></mfrac></mrow></math></p>
 <div class="row"><span class="text">هي:</span><math display="block"><mrow><mfrac><mrow><mi>d</mi><mi>r</mi></mrow><mrow><mi>d</mi><mi>t</mi></mrow></mfrac><mo>=</mo><mfrac><mrow><mn>1</mn></mrow><mrow><mn>2</mn><mi>π</mi></mrow></mfrac><mo>+</mo><mfrac><mrow><mi>d</mi><mi>h</mi></mrow><mrow><mi>d</mi><mi>t</mi></mrow></mfrac></mrow></math></div>
 <p>د) نجد المعادلة النهائية ونعوّض القيم فيها وهي:</p>
@@ -1560,7 +1612,9 @@ table.values.tbl-scroll { display: block; overflow-x: auto; }   /* a value table
 <p class="center"><math display="block"><mrow><mfrac><mrow><msup><mi>f</mi><mi>′</mi></msup><mspace width="0.167em"></mspace><mo stretchy="false">(</mo><mi>c</mi><mo stretchy="false">)</mo></mrow><mrow><msup><mi>g</mi><mi>′</mi></msup><mo stretchy="false">(</mo><mi>c</mi><mo stretchy="false">)</mo></mrow></mfrac><mo>=</mo><mfrac><mrow><mi>f</mi><mo stretchy="false">(</mo><mi>b</mi><mo stretchy="false">)</mo><mo>−</mo><mi>f</mi><mo stretchy="false">(</mo><mi>a</mi><mo stretchy="false">)</mo></mrow><mrow><mi>g</mi><mo stretchy="false">(</mo><mi>b</mi><mo stretchy="false">)</mo><mo>−</mo><mi>g</mi><mo stretchy="false">(</mo><mi>a</mi><mo stretchy="false">)</mo></mrow></mfrac></mrow></math></p>
 <p>عندما تكون <math display="inline"><mrow><mi>g</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo><mo>=</mo><mi>x</mi></mrow></math> فإن:</p>
 <p class="center"><math display="block"><mrow><msup><mi>g</mi><mi>′</mi></msup><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo><mo>=</mo><mn>1</mn><mo>,</mo><mi>g</mi><mo stretchy="false">(</mo><mi>a</mi><mo stretchy="false">)</mo><mo>=</mo><mi>a</mi><mo>,</mo><mi>g</mi><mo stretchy="false">(</mo><mi>b</mi><mo stretchy="false">)</mo><mo>=</mo><mi>b</mi></mrow></math></p>
+</div>
 <div class="pb block" data-page="182" id="p182"></div>
+<div class="box cont">
 <p>وبالتعويض في الصيغة نحصل على:</p>
 <p class="center"><math display="block"><mrow><mfrac><mrow><msup><mi>f</mi><mi>′</mi></msup><mspace width="0.167em"></mspace><mo stretchy="false">(</mo><mi>c</mi><mo stretchy="false">)</mo></mrow><mrow><mn>1</mn></mrow></mfrac><mo>=</mo><mfrac><mrow><mi>f</mi><mo stretchy="false">(</mo><mi>b</mi><mo stretchy="false">)</mo><mo>−</mo><mi>f</mi><mo stretchy="false">(</mo><mi>a</mi><mo stretchy="false">)</mo></mrow><mrow><mi>b</mi><mo>−</mo><mi>a</mi></mrow></mfrac></mrow></math></p>
 <p>وهي صيغة نظرية القيمة المتوسطة.</p>
@@ -1595,7 +1649,9 @@ table.values.tbl-scroll { display: block; overflow-x: auto; }   /* a value table
 <p>3- المنحنى مقعر للأعلى على الفترة <math display="inline"><mrow><mo stretchy="false">[</mo><mn>0</mn><mo>,</mo><mfrac><mrow><mn>1</mn></mrow><mrow><mn>2</mn></mrow></mfrac><mo stretchy="false">]</mo></mrow></math> ومقعر للأسفل على الفترتين:</p>
 <p class="center"><math display="inline"><mrow><mo stretchy="false">]</mo><mo>−</mo><mo>∞</mo><mo>,</mo><mn>0</mn><mo stretchy="false">]</mo></mrow></math> و <math display="inline"><mrow><mo stretchy="false">[</mo><mfrac><mrow><mn>1</mn></mrow><mrow><mn>2</mn></mrow></mfrac><mo>,</mo><mo>∞</mo><mo stretchy="false">[</mo></mrow></math></p>
 <p>للمنحنى نقطتا انعطاف هما <math display="inline"><mrow><mo stretchy="false">(</mo><mfrac><mrow><mn>1</mn></mrow><mrow><mn>2</mn></mrow></mfrac><mo>,</mo><mfrac><mrow><mn>1</mn></mrow><mrow><mn>16</mn></mrow></mfrac><mo stretchy="false">)</mo><mo>,</mo><mtext> </mtext><mo stretchy="false">(</mo><mn>0</mn><mo>,</mo><mn>0</mn><mo stretchy="false">)</mo></mrow></math></p>
+</div>
 <div class="pb block" data-page="184" id="p184"></div>
+<div class="box cont">
 <p>4- المنحنى مقعر للأعلى على الفترتين <math display="inline"><mrow><mo stretchy="false">[</mo><mo>−</mo><mn>1</mn><mo>,</mo><mn>0</mn><mo stretchy="false">]</mo></mrow></math> و <math display="inline"><mrow><mo stretchy="false">]</mo><mn>1</mn><mo>,</mo><mo>∞</mo><mo stretchy="false">[</mo></mrow></math></p>
 <p>المنحنى مقعر للأسفل على الفترتين <math display="inline"><mrow><mo stretchy="false">]</mo><mo>−</mo><mo>∞</mo><mo>,</mo><mo>−</mo><mn>1</mn><mo stretchy="false">]</mo></mrow></math> و <math display="inline"><mrow><mo stretchy="false">[</mo><mn>0</mn><mo>,</mo><mn>1</mn><mo stretchy="false">]</mo></mrow></math></p>
 <p>نقطة الإنعطاف <math display="inline"><mrow><mo stretchy="false">(</mo><mn>0</mn><mo>,</mo><mn>0</mn><mo stretchy="false">)</mo></mrow></math>.</p>
@@ -1606,7 +1662,9 @@ table.values.tbl-scroll { display: block; overflow-x: auto; }   /* a value table
 <p>3- قيمة عظمى مقدارها 128، وقيمة صغرى مقدارها 0، ونقطة الانعطاف (4، 64).</p>
 <p class="callout-title">أسئلة التقويم الذاتي (5)</p>
 <figure class="fig" style="width:81%"><img alt="" loading="lazy" src="images/u03-s174-F1.png"/></figure>
+</div>
 <div class="pb block" data-page="185" id="p185"></div>
+<div class="box cont">
 <figure class="fig" style="width:46%"><img alt="" loading="lazy" src="images/u03-s175-F1.png"/></figure>
 <p class="center">المحور التقاربي الرأسي هو <math display="inline"><mrow><mi>x</mi><mo>=</mo><mn>0</mn></mrow></math></p>
 <p class="center">المحور التقاربي المائل هو <math display="inline"><mrow><mi>y</mi><mo>=</mo><mi>x</mi></mrow></math></p>
@@ -1626,7 +1684,9 @@ table.values.tbl-scroll { display: block; overflow-x: auto; }   /* a value table
 <p>6- <math display="inline"><mrow><mn>9</mn><mi>π</mi></mrow></math> متراً مربعاً/ثانية.</p>
 <p>7- <math display="inline"><mrow><mfrac><mrow><mn>1</mn></mrow><mrow><mn>2</mn><mi>π</mi></mrow></mfrac></mrow></math> سم/ث.</p>
 <p>8- 854.5 سم مربع/ثانية.</p>
+</div>
 <div class="pb block" data-page="186" id="p186"></div>
+<div class="box cont">
 <p>9- 51 كم/ساعة.</p>
 <p>11- 7.5- سم/ث.</p>
 <p>12- (أ) 0.159 قدم/ث     (ب) 0.171 قدم/ث.</p>
@@ -1661,16 +1721,18 @@ table.values.tbl-scroll { display: block; overflow-x: auto; }   /* a value table
 <li><strong class="hl">اقتران متناقص (<span class="ltr">Decreasing Function</span>):</strong> يكون الاقتران متناقصاً على الفترة إذا كانت مشتقة الاقتران الأولى سالبة في هذه الفترة.</li>
 <li><strong class="hl">اقتران متزايد (<span class="ltr">Increasing Function</span>):</strong> هو الاقتران الذي تكون مشتقته الأولى موجبة خلال فترة التزايد.</li>
 <li><strong class="hl">صيغة غير معينة (<span class="ltr">Indeterminate Form</span>):</strong> وهي صيغة الاقتران عند نقطة محددة بحيث تساوي <math display="inline"><mrow><mfrac><mrow><mn>0</mn></mrow><mrow><mn>0</mn></mrow></mfrac></mrow></math> أو <math display="inline"><mrow><mfrac><mrow><mo>∞</mo></mrow><mrow><mo>∞</mo></mrow></mfrac></mrow></math>.</li>
-<li><strong class="hl">قاعدة لوبيتال (<span class="ltr">L'hopital's Rule</span>):</strong> هي قاعدة تعالج نهايات الصيغ غير المعينة عند نقطة محددة حيث تقول: <math display="inline"><mrow><munder><mo>lim</mo><mrow><mi>x</mi><mo>→</mo><mi>c</mi></mrow></munder><mfrac><mrow><mi>f</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo></mrow><mrow><mi>g</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo></mrow></mfrac><mo>=</mo><munder><mo>lim</mo><mrow><mi>x</mi><mo>→</mo><mi>c</mi></mrow></munder><mfrac><mrow><msup><mi>f</mi><mi>′</mi></msup><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo></mrow><mrow><msup><mi>g</mi><mi>′</mi></msup><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo></mrow></mfrac></mrow></math> بحيث أن <math display="inline"><mrow><mfrac><mrow><mi>f</mi><mo stretchy="false">(</mo><mi>c</mi><mo stretchy="false">)</mo></mrow><mrow><mi>g</mi><mo stretchy="false">(</mo><mi>c</mi><mo stretchy="false">)</mo></mrow></mfrac><mo>=</mo><mfrac><mrow><mn>0</mn></mrow><mrow><mn>0</mn></mrow></mfrac></mrow></math> أو <math display="inline"><mrow><mfrac><mrow><mo>∞</mo></mrow><mrow><mo>∞</mo></mrow></mfrac></mrow></math>.<span class="pb" data-page="188" id="p188"></span></li>
-
+<li><strong class="hl">قاعدة لوبيتال (<span class="ltr">L'hopital's Rule</span>):</strong> هي قاعدة تعالج نهايات الصيغ غير المعينة عند نقطة محددة حيث تقول: <math display="inline"><mrow><munder><mo>lim</mo><mrow><mi>x</mi><mo>→</mo><mi>c</mi></mrow></munder><mfrac><mrow><mi>f</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo></mrow><mrow><mi>g</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo></mrow></mfrac><mo>=</mo><munder><mo>lim</mo><mrow><mi>x</mi><mo>→</mo><mi>c</mi></mrow></munder><mfrac><mrow><msup><mi>f</mi><mi>′</mi></msup><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo></mrow><mrow><msup><mi>g</mi><mi>′</mi></msup><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo></mrow></mfrac></mrow></math> بحيث أن <math display="inline"><mrow><mfrac><mrow><mi>f</mi><mo stretchy="false">(</mo><mi>c</mi><mo stretchy="false">)</mo></mrow><mrow><mi>g</mi><mo stretchy="false">(</mo><mi>c</mi><mo stretchy="false">)</mo></mrow></mfrac><mo>=</mo><mfrac><mrow><mn>0</mn></mrow><mrow><mn>0</mn></mrow></mfrac></mrow></math> أو <math display="inline"><mrow><mfrac><mrow><mo>∞</mo></mrow><mrow><mo>∞</mo></mrow></mfrac></mrow></math>.</li>
+</ul>
+</div>
+<div class="pb block" data-page="188" id="p188"></div>
+<div class="box cont">
+<ul class="cont">
 <li><strong class="hl">نظرية رول (<span class="ltr">Roll's Theorem</span>):</strong> إن لمشتقة الاقتران <math display="inline"><mrow><mi>f</mi><mo stretchy="false">(</mo><mi>x</mi><mo stretchy="false">)</mo></mrow></math> صفر في الفترة المفتوحة <math display="inline"><mrow><mo stretchy="false">]</mo><mi>a</mi><mo>,</mo><mi>b</mi><mo stretchy="false">[</mo></mrow></math> إذا كان الاقتران معرفاً، ومتصلاً على هذه الفترة وكانت <math display="inline"><mrow><mi>f</mi><mo stretchy="false">(</mo><mi>a</mi><mo stretchy="false">)</mo><mo>=</mo><mi>f</mi><mo stretchy="false">(</mo><mi>b</mi><mo stretchy="false">)</mo></mrow></math></li>
 <li><strong class="hl">نظرية القيمة المتوسطة (<span class="ltr">Mean Value Theorem</span>):</strong> هي صيغة عامة من نظرية رول، لا تشترط تساوي قيمتي الاقتران عند <math display="inline"><mrow><mi>a</mi></mrow></math> و <math display="inline"><mrow><mi>b</mi></mrow></math>.</li>
 <li><strong class="hl">نظرية كوشي (<span class="ltr">Cauchy's Theorem</span>):</strong> هي صيغة عامة من نظرية القيمة المتوسطة. تعالج وجود اقترانين وليس اقتران واحد.</li>
 <li><strong class="hl">نقطة الانعطاف (<span class="ltr">Point of Inflection</span>):</strong> هي النقطة التي يتغير عندها تقعر منحنى الاقتران من الأعلى إلى الأسفل أو العكس.</li>
 <li><strong class="hl">معدلات مرتبطة (<span class="ltr">Related Rates</span>):</strong> هي اقترانات، تتغير فيها القيمة الأولى بالنسبة للزمن.</li>
 </ul>
-
-
 </div>
 <div class="pb block" data-page="189" id="p189"></div>
 <h1 class="sec" id="s30">12. المراجع</h1>
@@ -1696,6 +1758,7 @@ table.values.tbl-scroll { display: block; overflow-x: auto; }   /* a value table
      3. otherwise shrink the broken lines (down to 80%);
      4. as a last resort, let that one equation scroll sideways inside the column.
    A value table wider than the column is shrunk a little, then scrolls sideways.
+   A value table cut by a page break gets the same column widths in both parts.
    Re-runs when the window is resized. The page HTML is never changed on disk. */
 (function () {
   var REL = /^(=|⇒|⇐|⇔|→|≈|≃|≅|≡|≠|≤|≥|<|>|∼)$/;
@@ -1774,6 +1837,24 @@ table.values.tbl-scroll { display: block; overflow-x: auto; }   /* a value table
     for (var s of [1, 0.92, 0.85, 0.8]) { tb.style.fontSize = s === 1 ? '' : s + 'em'; if (tb.scrollWidth <= room + 0.5) return; }
     tb.classList.add('tbl-scroll');
   }
+  function alignTableParts() {          // a table cut by a page: both parts get the same column widths
+    document.querySelectorAll('.book table.values.cont').forEach(function (part) {
+      var all = Array.from(document.querySelectorAll('.book table.values'));
+      var first = all[all.indexOf(part) - 1];
+      while (first && first.classList.contains('cont')) first = all[all.indexOf(first) - 1];
+      if (!first) return;
+      var row = first.querySelector('tbody tr') || first.querySelector('tr');
+      if (!row || row.querySelector('[colspan]')) return;
+      var total = first.getBoundingClientRect().width;
+      var widths = Array.from(row.children).map(function (c) { return (c.getBoundingClientRect().width / total * 100).toFixed(2) + '%'; });
+      [first].concat(all.filter(function (t, i) { return i > all.indexOf(first) && t.classList.contains('cont'); })).forEach(function (t) {
+        if (t.querySelector('colgroup.parts')) return;
+        var cg = document.createElement('colgroup'); cg.className = 'parts';
+        widths.forEach(function (w) { var c = document.createElement('col'); c.style.width = w; cg.appendChild(c); });
+        t.insertBefore(cg, t.firstChild); t.style.tableLayout = 'fixed';
+      });
+    });
+  }
   function reset() {
     document.querySelectorAll('.book table.values').forEach(function (tb) { tb.style.fontSize = ''; tb.classList.remove('tbl-scroll'); });
     saved.forEach(function (orig, m) { m.replaceChildren(orig.cloneNode(true)); m.style.fontSize = ''; delete m.dataset.basePx; m.classList.remove('eq-broken', 'eq-scroll'); });
@@ -1788,7 +1869,7 @@ table.values.tbl-scroll { display: block; overflow-x: auto; }   /* a value table
   }
   var t, lastW = 0;
   function later() { clearTimeout(t); t = setTimeout(function () { if (innerWidth !== lastW) { lastW = innerWidth; run(); } }, 150); }
-  function start() { lastW = innerWidth; run(); addEventListener('resize', later); }
+  function start() { lastW = innerWidth; alignTableParts(); run(); addEventListener('resize', later); }
   var ready = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { ready.then(start); });
   else ready.then(start);
